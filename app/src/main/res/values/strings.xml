@@ -1,0 +1,48 @@
+<resources>
+    <string name="app_name">Aura Glass</string>
+    <string name="app_tagline">Next-Gen Enterprise Auth Experience</string>
+    <string name="get_started">Get Started</string>
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="welcome_back">Welcome Back</string>
+    <string name="login_subtitle">Welcome back! Please enter your details.</string>
+    <string name="email_label">Email Address</string>
+    <string name="email_placeholder">alex@example.com</string>
+    <string name="password_label">Password</string>
+    <string name="password_placeholder">••••••••</string>
+    <string name="remember_me">Remember Me</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="or_divider">OR</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="create_account">Create Account</string>
+    <string name="signup_subtitle">Join Aura Glass to start your premium experience.</string>
+    <string name="full_name_label">Full Name</string>
+    <string name="full_name_placeholder">Alex Mercer</string>
+    <string name="confirm_password_label">Confirm Password</string>
+    <string name="terms_agree">I agree to Terms &amp; Privacy Policy</string>
+    <string name="already_have_account">Already have an account?</string>
+    <string name="or_sign_up_with">OR SIGN UP WITH</string>
+    <string name="reset_password">Reset Password</string>
+    <string name="reset_password_desc">Enter your email address to receive a password reset link.</string>
+    <string name="send_link">Send Link</string>
+    <string name="cancel">Cancel</string>
+    <string name="auth_successful">Authentication Successful!</string>
+    <string name="home_desc">Welcome to Aura Glass. Premium glassmorphism, responsive design, and Hindi/English language support.</string>
+    <string name="log_out">Log Out</string>
+    <string name="error_email">Please enter a valid email address</string>
+    <string name="error_password">Password must be at least 6 characters</string>
+    <string name="error_name">Full name is required</string>
+    <string name="error_confirm_password">Passwords do not match</string>
+    <string name="error_terms">You must accept the terms &amp; conditions</string>
+    <string name="lang_toggle">हिंदी</string>
+
+    <!-- Baking App Legacy Keys -->
+    <string name="action_go">Go</string>
+    <string name="baking_title">Baking with Gemini</string>
+    <string name="label_prompt">Prompt</string>
+    <string name="prompt_placeholder">Provide a recipe for the baked goods in the image</string>
+    <string name="image1_description">Cupcake</string>
+    <string name="image2_description">Cookies</string>
+    <string name="image3_description">Cake</string>
+    <string name="results_placeholder">(Results will appear here)</string>
+</resources>
