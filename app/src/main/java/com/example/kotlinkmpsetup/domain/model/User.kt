@@ -13,6 +13,7 @@ package com.example.kotlinkmpsetup.domain.model
  */
 data class User(
     val id: String,
+    val sessionID: String,
     val fullName: String,
     val email: String,
     val token: AuthToken

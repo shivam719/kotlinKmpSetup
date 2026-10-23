@@ -6,13 +6,12 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * ====================================================================================
- * CLEAN ARCHITECTURE LAYER: DOMAIN (Repository Interface)
+ * CLEAN ARCHITECTURE LAYER: DOMAIN (Auth Repository Contract)
  * ====================================================================================
- * Contract defining authentication capabilities available to Domain Use Cases.
  */
 interface AuthRepository {
     suspend fun login(email: String, password: String): AuthResult<User>
-    suspend fun validateOTP(email: String, password: String, otp: String): AuthResult<User>
+    suspend fun validateOTP(email: String, password: String, otp: String, otpSession: String? = null): AuthResult<User>
     suspend fun signup(
         fullName: String,
         outletName: String,
@@ -21,6 +20,7 @@ interface AuthRepository {
         address: String,
         pincode: String
     ): AuthResult<User>
+
     suspend fun saveAuthToken(accessToken: String, refreshToken: String)
     fun getSavedAccessToken(): Flow<String?>
     suspend fun logout()

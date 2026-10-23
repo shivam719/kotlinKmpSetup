@@ -26,12 +26,17 @@ data class AppBanner(
 
 data class AppNews(
     val id: Int = 0,
-    val content: String = ""
+    val content: String = "",
+    val newsDetail: String = ""
 )
 
 data class ServiceItemModel(
     val id: Int = 0,
+    val parentId: Int = 0,
     val name: String = "",
+    val serviceType: String = "",
+    val sCode: String = "",
     val iconName: String = "",
-    val isEnabled: Boolean = true
+    val isEnabled: Boolean = true,
+    val categoryId: Int = 0
 )

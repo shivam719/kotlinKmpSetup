@@ -87,11 +87,12 @@ class KtorHomeRemoteDataSource(
         return when (result) {
             is NetworkResult.Success -> {
                 val dto = result.data
-                val newsStr = dto.newsContent?.newsContent ?: dto.news.orEmpty()
+                val rawNews = dto.newsContent?.newsDetail ?: dto.newsContent?.newsContent ?: dto.news.orEmpty()
+                val cleanedNews = parseHtmlText(rawNews)
                 NetworkResult.Success(
                     AppNews(
                         id = dto.newsContent?.id ?: 0,
-                        content = newsStr
+                        content = cleanedNews
                     )
                 )
             }
@@ -110,20 +111,41 @@ class KtorHomeRemoteDataSource(
         return when (result) {
             is NetworkResult.Success -> {
                 val dto = result.data
-                val items = (dto.data ?: dto.opTypes)?.map {
+                val rawList = dto.data?.assignedOpTypes
+                    ?: dto.data?.opTypes
+                    ?: dto.assignedOpTypes
+                    ?: dto.opTypes
+                    ?: emptyList()
+
+                val items = rawList.map { item ->
+                    val active = item.isServiceActive == true && item.isActive == true
+
                     ServiceItemModel(
-                        id = it.serviceID ?: 0,
-                        name = it.name ?: it.service ?: "Service",
-                        iconName = it.icon.orEmpty(),
-                        isEnabled = it.enabled ?: true
+                        id = item.serviceID ?: 0,
+                        parentId = item.parentID ?: 0,
+                        name = item.name ?: item.service ?: "Service",
+                        serviceType = item.service.orEmpty(),
+                        sCode = item.sCode.orEmpty(),
+                        iconName = item.icon.orEmpty(),
+                        isEnabled = active,
+                        categoryId = item.parentID ?: item.opTypeID ?: 0
                     )
-                }.orEmpty()
+                }
                 NetworkResult.Success(items)
             }
             is NetworkResult.Error -> result
             is NetworkResult.NetworkOffline -> NetworkResult.NetworkOffline
             is NetworkResult.Loading -> NetworkResult.Loading
             is NetworkResult.Pending -> NetworkResult.Pending
+        }
+    }
+
+    private fun parseHtmlText(html: String?): String {
+        if (html.isNullOrBlank()) return ""
+        return try {
+            android.text.Html.fromHtml(html, android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim()
+        } catch (e: Exception) {
+            html.replace("<[^>]*>".toRegex(), "").trim()
         }
     }
 

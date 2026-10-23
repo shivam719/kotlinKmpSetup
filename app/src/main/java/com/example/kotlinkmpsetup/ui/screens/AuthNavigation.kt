@@ -62,7 +62,8 @@ enum class AuthScreenState {
     Splash,
     Login,
     Signup,
-    Home
+    Home,
+    Recharge
 }
 
 /**
@@ -149,8 +150,15 @@ fun AuthNavigation(
                         AuthScreenState.Home -> {
                             HomeScreen(
                                 onLogout = { currentScreen = AuthScreenState.Login },
+                                onNavigateToRecharge = { currentScreen = AuthScreenState.Recharge },
                                 currentLanguage = currentLanguage,
                                 onLanguageChange = { currentLanguage = it }
+                            )
+                        }
+
+                        AuthScreenState.Recharge -> {
+                            RechargeScreen(
+                                onNavigateBack = { currentScreen = AuthScreenState.Home }
                             )
                         }
                     }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -31,10 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
@@ -47,20 +50,20 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.kotlinkmpsetup.R
+import com.example.kotlinkmpsetup.data.remote.ApiEndpoints.BASE_URL
+import com.example.kotlinkmpsetup.domain.usecase.ValidateMobileUseCase
 import com.example.kotlinkmpsetup.presentation.auth.LoginViewModel
 import com.example.kotlinkmpsetup.presentation.components.NetworkStatusBanner
-import com.example.kotlinkmpsetup.ui.components.AppleIcon
-import com.example.kotlinkmpsetup.ui.components.FacebookIcon
 import com.example.kotlinkmpsetup.ui.components.GlassButton
 import com.example.kotlinkmpsetup.ui.components.GlassCard
 import com.example.kotlinkmpsetup.ui.components.GlassCheckbox
-import com.example.kotlinkmpsetup.ui.components.GlassIconButton
 import com.example.kotlinkmpsetup.ui.components.GlassOtpDialog
 import com.example.kotlinkmpsetup.ui.components.GlassSnackbar
 import com.example.kotlinkmpsetup.ui.components.GlassTextField
-import com.example.kotlinkmpsetup.ui.components.GoogleIcon
 import com.example.kotlinkmpsetup.ui.components.LineLoading
 import com.example.kotlinkmpsetup.ui.components.LiquidBackground
 import com.example.kotlinkmpsetup.ui.components.SnackbarType
@@ -92,6 +95,7 @@ fun LoginScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showForgotPasswordDialog by rememberSaveable { mutableStateOf(false) }
+    var showAppBeforeLoginPopup by rememberSaveable { mutableStateOf(true) }
 
     val toastController = rememberGlassToastState()
 
@@ -114,19 +118,17 @@ fun LoginScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             val blurModifier = if (showForgotPasswordDialog || uiState.isOtpRequired) Modifier.blur(16.dp) else Modifier
 
-            Column(modifier = Modifier.fillMaxSize().then(blurModifier)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(blurModifier)
+            ) {
                 // Real-time Network Offline/Online Banner
                 NetworkStatusBanner(isOffline = uiState.isOffline)
 
                 AdaptiveAuthLayout(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     applyStatusBarsPadding = !uiState.isOffline,
-                    topEndAction = {
-                        GlassLanguageToggle(
-                            currentLanguage = currentLanguage,
-                            onLanguageChange = onLanguageChange
-                        )
-                    },
                     heroContent = {
                         HeroBrandingPane()
                     },
@@ -185,14 +187,58 @@ fun LoginScreen(
                                     viewModel.onLoginSubmitted()
                                 },
                                 onForgotPassword = { showForgotPasswordDialog = true },
-                                onNavigateToSignup = onNavigateToSignup,
-                                onSocialLogin = { provider ->
-                                    toastController.show("Sign in with $provider...", SnackbarType.Info)
-                                }
+                                onNavigateToSignup = onNavigateToSignup
                             )
                         }
                     }
                 )
+            }
+
+            // Pre-Login Promo Dialog Popup (Only shown if image exists & loads 100% successfully)
+            var isImageLoadedSuccessfully by remember { mutableStateOf(false) }
+
+            if (showAppBeforeLoginPopup) {
+                AsyncImage(
+                    model = "${BASE_URL}/Image/Website/1/Popup/AppBeforeLogin.png",
+                    contentDescription = null,
+                    onSuccess = {
+                        isImageLoadedSuccessfully = true
+                    },
+                    onError = {
+                        showAppBeforeLoginPopup = false
+                        isImageLoadedSuccessfully = false
+                    },
+                    modifier = Modifier
+                        .size(1.dp)
+                        .alpha(0f)
+                )
+
+                // Display Glass Dialog ONLY when image has loaded 100% successfully
+                if (isImageLoadedSuccessfully) {
+                    Dialog(onDismissRequest = { showAppBeforeLoginPopup = false }) {
+                        GlassCard(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentPadding = 12.dp
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                AsyncImage(
+                                    model = "${BASE_URL}/Image/Website/1/Popup/AppBeforeLogin.png",
+                                    contentDescription = "Announcement",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                GlassButton(
+                                    text = "Close",
+                                    onClick = { showAppBeforeLoginPopup = false }
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // Forgot Password Dialog Overlay
@@ -205,8 +251,7 @@ fun LoginScreen(
                     }
                 )
             }
-
-            // 2-Factor Authentication OTP Verification Dialog Overlay (statuscode == 2)
+            
             if (uiState.isOtpRequired) {
                 GlassOtpDialog(
                     onDismiss = { viewModel.onCancelOtp() },
@@ -244,8 +289,7 @@ private fun LoginFormCard(
     isLoading: Boolean,
     onSubmit: () -> Unit,
     onForgotPassword: () -> Unit,
-    onNavigateToSignup: () -> Unit,
-    onSocialLogin: (String) -> Unit
+    onNavigateToSignup: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val glassColors = LocalGlassColors.current
@@ -374,6 +418,7 @@ private fun LoginFormCard(
     }
 }
 
+
 /**
  * Hero Branding Banner
  */
@@ -430,7 +475,7 @@ private fun HeroBrandingPane() {
 }
 
 /**
- * Glass Dialog for Forgot Password
+ * Glass Dialog for Forgot Password with Real-Time Mobile Validation
  */
 @Composable
 private fun ForgotPasswordDialog(
@@ -438,6 +483,8 @@ private fun ForgotPasswordDialog(
     onSendResetLink: (String) -> Unit
 ) {
     var mobileNo by rememberSaveable { mutableStateOf("") }
+    var mobileError by rememberSaveable { mutableStateOf<String?>(null) }
+    val validateMobileUseCase = remember { ValidateMobileUseCase() }
     val glassColors = LocalGlassColors.current
 
     Box(
@@ -465,7 +512,7 @@ private fun ForgotPasswordDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = stringResource(R.string.reset_password),
+                    text = "Forgot Password",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = glassColors.textPrimary
@@ -474,7 +521,7 @@ private fun ForgotPasswordDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = stringResource(R.string.reset_password_desc),
+                    text = "Enter your 10-digit registered mobile number to receive password reset OTP",
                     fontSize = 13.sp,
                     color = glassColors.textSecondary,
                     textAlign = TextAlign.Center
@@ -484,10 +531,16 @@ private fun ForgotPasswordDialog(
 
                 GlassTextField(
                     value = mobileNo,
-                    onValueChange = { mobileNo = it },
-                    label = stringResource(R.string.email_label),
-                    placeholder = stringResource(R.string.email_placeholder),
+                    onValueChange = { input ->
+                        if (input.length <= 10 && input.all { it.isDigit() }) {
+                            mobileNo = input
+                            mobileError = if (input.isBlank()) null else validateMobileUseCase(input).errorMessage
+                        }
+                    },
+                    label = "Mobile Number",
+                    placeholder = "Enter 10-digit mobile number",
                     leadingIcon = Icons.Default.Phone,
+                    errorMessage = mobileError,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Phone,
                         imeAction = ImeAction.Done
@@ -505,9 +558,16 @@ private fun ForgotPasswordDialog(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     GlassButton(
-                        text = stringResource(R.string.send_link),
-                        onClick = { if (mobileNo.length >= 10) onSendResetLink(mobileNo) },
-                        modifier = Modifier.width(130.dp)
+                        text = "Send Reset Link",
+                        onClick = {
+                            val result = validateMobileUseCase(mobileNo)
+                            if (!result.isValid) {
+                                mobileError = result.errorMessage
+                            } else {
+                                onSendResetLink(mobileNo)
+                            }
+                        },
+                        modifier = Modifier.width(150.dp)
                     )
                 }
             }

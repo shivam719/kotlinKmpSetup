@@ -50,6 +50,7 @@ data class ArsenBannerResponseDto(
 data class ArsenNewsDto(
     @SerialName("id") val id: Int? = null,
     @SerialName("newsContent") val newsContent: String? = null,
+    @SerialName("newsDetail") val newsDetail: String? = null,
     @SerialName("title") val title: String? = null
 )
 
@@ -64,16 +65,33 @@ data class ArsenNewsResponseDto(
 @Serializable
 data class ArsenServiceItemDto(
     @SerialName("serviceID") val serviceID: Int? = null,
+    @SerialName("parentID") val parentID: Int? = null,
     @SerialName("name") val name: String? = null,
     @SerialName("service") val service: String? = null,
+    @SerialName("sCode") val sCode: String? = null,
     @SerialName("icon") val icon: String? = null,
-    @SerialName("enabled") val enabled: Boolean? = true
+    @SerialName("enabled") val enabled: Boolean? = null,
+    @SerialName("isActive") val isActive: Boolean? = null,
+    @SerialName("isServiceActive") val isServiceActive: Boolean? = null,
+    @SerialName("serviceTypeID") val serviceTypeID: String? = null,
+    @SerialName("opTypeID") val opTypeID: Int? = null,
+    @SerialName("category") val category: String? = null
+)
+
+@Serializable
+data class ArsenServicesDataDto(
+    @SerialName("assignedOpTypes") val assignedOpTypes: List<ArsenServiceItemDto>? = null,
+    @SerialName("opTypes") val opTypes: List<ArsenServiceItemDto>? = null
 )
 
 @Serializable
 data class ArsenServicesResponseDto(
     @SerialName("statuscode") val statusCode: Int? = null,
     @SerialName("msg") val message: String? = null,
-    @SerialName("data") val data: List<ArsenServiceItemDto>? = null,
-    @SerialName("opTypes") val opTypes: List<ArsenServiceItemDto>? = null
+    @SerialName("data") val data: ArsenServicesDataDto? = null,
+    @SerialName("assignedOpTypes") val assignedOpTypes: List<ArsenServiceItemDto>? = null,
+    @SerialName("opTypes") val opTypes: List<ArsenServiceItemDto>? = null,
+    @SerialName("isAddMoneyEnable") val isAddMoneyEnable: Boolean? = null,
+    @SerialName("isPaymentGatway") val isPaymentGatway: Boolean? = null,
+    @SerialName("isUPI") val isUPI: Boolean? = null
 )

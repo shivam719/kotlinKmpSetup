@@ -42,6 +42,7 @@ class TokenDataStoreManager(private val context: Context) {
         saveTokens(user.token.accessToken, user.token.refreshToken)
         prefs.edit {
             putString("KEY_USER_ID", user.id)
+            putString("KEY_USER_SESSION_ID", user.sessionID)
             putString("KEY_USER_NAME", user.fullName)
             putString("KEY_USER_EMAIL", user.email)
         }
@@ -74,11 +75,13 @@ class TokenDataStoreManager(private val context: Context) {
         val id = prefs.getString("KEY_USER_ID", null) ?: return null
         val name = prefs.getString("KEY_USER_NAME", "User") ?: "User"
         val email = prefs.getString("KEY_USER_EMAIL", "") ?: ""
+        val sessionId = prefs.getString("KEY_USER_SESSION_ID", "") ?: ""
         val token = getAccessToken() ?: ""
         val refresh = getRefreshToken() ?: ""
 
         return User(
             id = id,
+            sessionID = sessionId,
             fullName = name,
             email = email,
             token = AuthToken(accessToken = token, refreshToken = refresh)

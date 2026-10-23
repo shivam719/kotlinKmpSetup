@@ -121,25 +121,18 @@ fun SignupScreen(
                     modifier = Modifier.weight(1f),
                     applyStatusBarsPadding = !uiState.isOffline,
                     topEndAction = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            GlassIconButton(
-                                onClick = onNavigateToLogin,
-                                modifier = Modifier.size(36.dp),
-                                iconContent = {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back to Login",
-                                        tint = glassColors.textPrimary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            GlassLanguageToggle(
-                                currentLanguage = currentLanguage,
-                                onLanguageChange = onLanguageChange
-                            )
-                        }
+                        GlassIconButton(
+                            onClick = onNavigateToLogin,
+                            modifier = Modifier.size(36.dp),
+                            iconContent = {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back to Login",
+                                    tint = glassColors.textPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
                     },
                     heroContent = {
                         HeroSignupBrandingPane()

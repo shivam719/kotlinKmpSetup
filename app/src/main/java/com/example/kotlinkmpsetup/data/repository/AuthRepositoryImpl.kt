@@ -28,8 +28,8 @@ class AuthRepositoryImpl(
         return result
     }
 
-    override suspend fun validateOTP(email: String, password: String, otp: String): AuthResult<User> {
-        val result = remoteDataSource.validateOTP(email = email, password = password, otp = otp)
+    override suspend fun validateOTP(email: String, password: String, otp: String, otpSession: String?): AuthResult<User> {
+        val result = remoteDataSource.validateOTP(email = email, password = password, otp = otp, otpSession = otpSession)
         result.onSuccess { user ->
             tokenManager.saveUserSession(user)
         }

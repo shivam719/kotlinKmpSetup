@@ -13,18 +13,24 @@ data class ArsenLoginResponseDto(
     @SerialName("isVersionValid") val isVersionValid: Boolean? = true,
     @SerialName("isAppValid") val isAppValid: Boolean? = true,
     @SerialName("checkID") val checkID: Int? = null,
+    @SerialName("otpSession") val otpSession: String? = null,
+    @SerialName("oTPSession") val oTPSession: String? = null,
     @SerialName("data") val data: ArsenUserDataDto? = null
 ) {
+    val effectiveOtpSession: String?
+        get() = otpSession ?: oTPSession ?: checkID?.toString()
     fun toDomain(): User {
         val userPayload = data
-        val tokenString = userPayload?.sessionToken ?: userPayload?.sessionID?.toString() ?: "session_demo_token"
+        val sessionString = userPayload?.sessionToken ?: "session_demo_token"
+        val sessionIdString = userPayload?.sessionID?.toString() ?: ""
         return User(
-            id = userPayload?.userID?.toString() ?: "usr_17",
+            id = userPayload?.userID?.toString() ?: "17",
+            sessionID = sessionIdString,
             fullName = userPayload?.name ?: "Rehan Telecom",
             email = userPayload?.emailID ?: userPayload?.mobileNo ?: "",
             token = AuthToken(
-                accessToken = tokenString,
-                refreshToken = userPayload?.accountSecretKey ?: tokenString
+                accessToken = sessionString,
+                refreshToken = userPayload?.accountSecretKey ?: sessionString
             )
         )
     }

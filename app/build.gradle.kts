@@ -58,6 +58,9 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
+    // Coil Image Loading for Compose
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     // Google Play Location Services
     implementation("com.google.android.gms:play-services-location:21.3.0")
 

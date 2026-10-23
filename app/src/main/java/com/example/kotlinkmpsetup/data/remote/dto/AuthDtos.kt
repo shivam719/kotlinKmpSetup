@@ -26,7 +26,8 @@ data class ArsenLoginRequestDto(
     @SerialName("userID") val userID: String,
     @SerialName("version") val version: String,
     @SerialName("otp") val otp: String? = null,
-    @SerialName("oTPSession") val otpSession: String? = null
+    @SerialName("oTPType") val oTPType: Int? = null,
+    @SerialName("oTPSession") val oTPSession: String? = null
 )
 
 @Serializable
@@ -71,6 +72,7 @@ data class ArsenSignUpResponseDto(
     @SerialName("statuscode") val statusCode: Int? = null,
     @SerialName("msg") val message: String? = null,
     @SerialName("userId") val userId: String? = null,
+    @SerialName("sessionID") val sessionID: String? = null,
     @SerialName("userName") val userName: String? = null,
     @SerialName("password") val password: String? = null
 )
@@ -93,12 +95,14 @@ data class AuthResponseDto(
     @SerialName("user_id") val userId: String,
     @SerialName("full_name") val fullName: String,
     @SerialName("email") val email: String,
+    @SerialName("sessionID") val sessionID: String,
     @SerialName("access_token") val accessToken: String,
     @SerialName("refresh_token") val refreshToken: String
 ) {
     fun toDomain(): User {
         return User(
             id = userId,
+            sessionID = sessionID,
             fullName = fullName,
             email = email,
             token = AuthToken(

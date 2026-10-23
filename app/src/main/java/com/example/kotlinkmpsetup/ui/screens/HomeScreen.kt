@@ -2,6 +2,8 @@ package com.example.kotlinkmpsetup.ui.screens
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -26,22 +28,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -63,6 +71,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,19 +79,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.SubcomposeAsyncImage
 import com.example.kotlinkmpsetup.data.local.TokenDataStoreManager
+import com.example.kotlinkmpsetup.domain.model.AppBanner
+import com.example.kotlinkmpsetup.domain.model.ServiceItemModel
 import com.example.kotlinkmpsetup.domain.model.User
 import com.example.kotlinkmpsetup.presentation.home.HomeViewModel
+import com.example.kotlinkmpsetup.ui.components.GlassButton
 import com.example.kotlinkmpsetup.ui.components.GlassCard
 import com.example.kotlinkmpsetup.ui.components.GlassDangerButton
 import com.example.kotlinkmpsetup.ui.components.GlassSecondaryButton
 import com.example.kotlinkmpsetup.ui.components.LiquidBackground
+import com.example.kotlinkmpsetup.ui.components.glassShimmer
 import com.example.kotlinkmpsetup.ui.theme.LocalGlassColors
 import com.example.kotlinkmpsetup.ui.utils.AppLanguage
 import com.example.kotlinkmpsetup.ui.utils.GlassLanguageToggle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Bottom / Side Navigation Tabs for Home Dashboard
@@ -109,6 +126,7 @@ enum class DashboardTab(val label: String, val icon: ImageVector) {
 @Composable
 fun HomeScreen(
     onLogout: () -> Unit,
+    onNavigateToRecharge: () -> Unit = {},
     currentLanguage: AppLanguage,
     onLanguageChange: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
@@ -172,9 +190,7 @@ fun HomeScreen(
                         // Top Header Bar
                         TopDashboardHeader(
                             userName = savedUser?.fullName ?: "Rehan Telecom",
-                            userId = savedUser?.id ?: "17",
-                            currentLanguage = currentLanguage,
-                            onLanguageChange = onLanguageChange
+                            userId = savedUser?.id ?: "17"
                         )
 
                         // Tab Content View
@@ -193,7 +209,10 @@ fun HomeScreen(
                                         onLogout()
                                     }
                                 },
-                                onCancelLogout = { selectedTab = DashboardTab.Home }
+                                onCancelLogout = { selectedTab = DashboardTab.Home },
+                                onNavigateToRecharge = onNavigateToRecharge,
+                                currentLanguage = currentLanguage,
+                                onLanguageChange = onLanguageChange
                             )
                         }
                     }
@@ -209,9 +228,7 @@ fun HomeScreen(
                         // Top Header Bar
                         TopDashboardHeader(
                             userName = savedUser?.fullName ?: "Rehan Telecom",
-                            userId = savedUser?.id ?: "17",
-                            currentLanguage = currentLanguage,
-                            onLanguageChange = onLanguageChange
+                            userId = savedUser?.id ?: "17"
                         )
 
                         // Tab Content View
@@ -230,7 +247,10 @@ fun HomeScreen(
                                         onLogout()
                                     }
                                 },
-                                onCancelLogout = { selectedTab = DashboardTab.Home }
+                                onCancelLogout = { selectedTab = DashboardTab.Home },
+                                onNavigateToRecharge = onNavigateToRecharge,
+                                currentLanguage = currentLanguage,
+                                onLanguageChange = onLanguageChange
                             )
                         }
                     }
@@ -250,14 +270,12 @@ fun HomeScreen(
 }
 
 /**
- * Top Header Bar for Retailer Info & Language Switcher
+ * Top Header Bar for Retailer Info
  */
 @Composable
 private fun TopDashboardHeader(
     userName: String,
-    userId: String,
-    currentLanguage: AppLanguage,
-    onLanguageChange: (AppLanguage) -> Unit
+    userId: String
 ) {
     val glassColors = LocalGlassColors.current
 
@@ -281,11 +299,6 @@ private fun TopDashboardHeader(
                 color = glassColors.textSecondary
             )
         }
-
-        GlassLanguageToggle(
-            currentLanguage = currentLanguage,
-            onLanguageChange = onLanguageChange
-        )
     }
 }
 
@@ -297,13 +310,16 @@ private fun MainTabSwitcher(
     tab: DashboardTab,
     savedUser: User?,
     onLogoutConfirmed: () -> Unit,
-    onCancelLogout: () -> Unit
+    onCancelLogout: () -> Unit,
+    onNavigateToRecharge: () -> Unit = {},
+    currentLanguage: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit
 ) {
     when (tab) {
-        DashboardTab.Home -> HomeTabContent()
-        DashboardTab.Profile -> ProfileTabContent(savedUser)
+        DashboardTab.Home -> HomeTabContent(onNavigateToRecharge = onNavigateToRecharge)
+        DashboardTab.Profile -> ProfileTabContent(savedUser, currentLanguage, onLanguageChange)
         DashboardTab.Report -> ReportTabContent()
-        DashboardTab.WhatsApp -> HomeTabContent()
+        DashboardTab.WhatsApp -> HomeTabContent(onNavigateToRecharge = onNavigateToRecharge)
         DashboardTab.Logout -> LogoutTabContent(
             onConfirmLogout = onLogoutConfirmed,
             onCancel = onCancelLogout
@@ -317,6 +333,7 @@ private fun MainTabSwitcher(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeTabContent(
+    onNavigateToRecharge: () -> Unit = {},
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
     val glassColors = LocalGlassColors.current
@@ -388,7 +405,10 @@ private fun HomeTabContent(
             }
 
             // Live News / Announcement Ticker Banner
-            if (homeUiState.news.content.isNotBlank()) {
+            val content = homeUiState.news.content
+                .takeIf { it.isNotBlank() }
+                ?: homeUiState.news.newsDetail
+            if (content.isNotBlank()) {
                 Spacer(modifier = Modifier.height(14.dp))
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -406,7 +426,7 @@ private fun HomeTabContent(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = homeUiState.news.content,
+                            text = content,
                             fontSize = 12.sp,
                             color = glassColors.textPrimary,
                             fontWeight = FontWeight.Medium,
@@ -416,27 +436,82 @@ private fun HomeTabContent(
                 }
             }
 
+            // Auto-Scrolling Glass Promo Banner Slider or Shimmer Skeleton
+            if (homeUiState.isLoading && homeUiState.banners.isEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .glassShimmer(RoundedCornerShape(20.dp))
+                )
+            } else if (homeUiState.banners.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                BannerSlider(banners = homeUiState.banners)
+            }
+
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Quick Services Grid
-            Text(
-                text = "Quick Services",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = glassColors.textPrimary,
-                modifier = Modifier.fillMaxWidth()
-            )
+            // Categorized Dynamic Services Grid from GetOpTypes API (ServiceSections)
+            val allServices = homeUiState.services
+            if (allServices.isNotEmpty()) {
+                val bankingServices = allServices.filter { it.id in ServiceSections.BANKING }
+                val rechargeServices = allServices.filter { it.id in ServiceSections.RECHARGE }
+                val billServices = allServices.filter { it.id in ServiceSections.BILL }
+                val utilityServices = allServices.filter { it.id in ServiceSections.UTILITY }
+                val otherServices = allServices.filter {
+                    it.id !in ServiceSections.BANKING &&
+                    it.id !in ServiceSections.RECHARGE &&
+                    it.id !in ServiceSections.BILL &&
+                    it.id !in ServiceSections.UTILITY
+                }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                if (bankingServices.isNotEmpty()) {
+                    SectionCard(title = "Banking Services (24x7)") {
+                        DynamicServiceRow(services = bankingServices, onItemClick = { onNavigateToRecharge() })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                QuickServiceItem(label = "Mobile", icon = Icons.Default.Phone)
-                QuickServiceItem(label = "DTH", icon = Icons.Default.ReceiptLong)
-                QuickServiceItem(label = "AEPS", icon = Icons.Default.Shield)
-                QuickServiceItem(label = "Reports", icon = Icons.Default.Assessment)
+                if (rechargeServices.isNotEmpty()) {
+                    SectionCard(title = "Recharge Services") {
+                        DynamicServiceRow(services = rechargeServices, onItemClick = { onNavigateToRecharge() })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                if (billServices.isNotEmpty()) {
+                    SectionCard(title = "Bill Payments") {
+                        DynamicServiceRow(services = billServices, onItemClick = { onNavigateToRecharge() })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                if (utilityServices.isNotEmpty()) {
+                    SectionCard(title = "Utility Bills") {
+                        DynamicServiceRow(services = utilityServices, onItemClick = { onNavigateToRecharge() })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
+                if (otherServices.isNotEmpty()) {
+                    SectionCard(title = "Other Services") {
+                        DynamicServiceRow(services = otherServices, onItemClick = { onNavigateToRecharge() })
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+            } else {
+                SectionCard(title = "Quick Services") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        QuickServiceItem(label = "Mobile", icon = Icons.Default.Phone)
+                        QuickServiceItem(label = "DTH", icon = Icons.Default.ReceiptLong)
+                        QuickServiceItem(label = "AEPS", icon = Icons.Default.Shield)
+                        QuickServiceItem(label = "Reports", icon = Icons.Default.Assessment)
+                    }
+                }
             }
         }
     }
@@ -476,10 +551,155 @@ private fun QuickServiceItem(label: String, icon: ImageVector) {
 }
 
 /**
- * Profile Tab View: Retailer Details
+ * Service Sections Category IDs matching RMS / ArsenPay backend contracts
+ */
+private object ServiceSections {
+    val BANKING = listOf(22, 60, 44, 14, 24, 15, 23, 452)
+    val RECHARGE = listOf(1, 3, 5, 84)
+    val BILL = listOf(2, 4, 16, 17, 26, 49, 123)
+    val UTILITY = listOf(6, 25, 27, 28, 29, 35, 36, 38, 39, 46, 47, 48, 52, 54, 64, 69, 88, 90, 91, 92, 107, 112, 121, 122, 132, 133, 134)
+}
+
+/**
+ * Reusable Glass Section Card Container
  */
 @Composable
-private fun ProfileTabContent(user: User?) {
+private fun SectionCard(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val glassColors = LocalGlassColors.current
+
+    GlassCard(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = 16.dp
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = glassColors.textPrimary
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            content()
+        }
+    }
+}
+
+/**
+ * Dynamic Services Grid (Rows of 4 items for Mobile)
+ */
+@Composable
+private fun DynamicServiceRow(
+    services: List<ServiceItemModel>,
+    modifier: Modifier = Modifier,
+    onItemClick: (ServiceItemModel) -> Unit = {},
+    onInactiveClick: (ServiceItemModel) -> Unit = {}
+) {
+    val chunkSize = 4
+    val rows = services.chunked(chunkSize)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        rows.forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Top
+            ) {
+                rowItems.forEach { item ->
+                    ServiceGridItem(
+                        item = item,
+                        modifier = Modifier.weight(1f),
+                        onClick = { onItemClick(item) },
+                        onInactiveClick = { onInactiveClick(item) }
+                    )
+                }
+                repeat(chunkSize - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ServiceGridItem(
+    item: ServiceItemModel,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    onInactiveClick: () -> Unit = {}
+) {
+    val glassColors = LocalGlassColors.current
+
+    val icon = when {
+        item.name.contains("Mobile", ignoreCase = true) || item.name.contains("Prepaid", ignoreCase = true) || item.serviceType.contains("PREPAID", ignoreCase = true) -> Icons.Default.Phone
+        item.name.contains("Postpaid", ignoreCase = true) -> Icons.Default.Phone
+        item.name.contains("DTH", ignoreCase = true) || item.name.contains("BOX", ignoreCase = true) -> Icons.Default.ReceiptLong
+        item.name.contains("AEPS", ignoreCase = true) || item.serviceType.contains("AEPS", ignoreCase = true) -> Icons.Default.Shield
+        item.name.contains("Electricity", ignoreCase = true) -> Icons.Default.Bolt
+        item.name.contains("Water", ignoreCase = true) -> Icons.Default.WaterDrop
+        item.name.contains("Gas", ignoreCase = true) || item.name.contains("LPG", ignoreCase = true) -> Icons.Default.LocalGasStation
+        item.name.contains("Money", ignoreCase = true) || item.name.contains("Transfer", ignoreCase = true) || item.name.contains("PSA", ignoreCase = true) -> Icons.Default.AccountBalance
+        item.name.contains("Insurance", ignoreCase = true) -> Icons.Default.Shield
+        item.name.contains("Report", ignoreCase = true) -> Icons.Default.Assessment
+        else -> Icons.Default.AutoAwesome
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = item.isEnabled) { onClick() }
+            .padding(vertical = 4.dp, horizontal = 2.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(glassColors.glassSurface)
+                .border(
+                    width = 1.dp,
+                    color = if (item.isEnabled) glassColors.glassBorder else glassColors.glassBorder.copy(
+                        alpha = 0.2f
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = item.name,
+                tint = if (item.isEnabled) glassColors.accentPrimary else glassColors.textSecondary.copy(alpha = 0.4f),
+                modifier = Modifier.size(26.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = item.name,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (item.isEnabled) glassColors.textPrimary else glassColors.textSecondary,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            lineHeight = 14.sp
+        )
+    }
+}
+
+/**
+ * Profile Tab View: Retailer Details & Language Switcher
+ */
+@Composable
+private fun ProfileTabContent(
+    user: User?,
+    currentLanguage: AppLanguage,
+    onLanguageChange: (AppLanguage) -> Unit
+) {
     val glassColors = LocalGlassColors.current
 
     Column(
@@ -537,6 +757,56 @@ private fun ProfileTabContent(user: User?) {
                 ProfileDetailRow("Pincode", "713101")
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Exclusive App Language Switcher Card (English / हिंदी)
+        GlassCard(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = 20.dp
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = if (currentLanguage == AppLanguage.ENGLISH) "App Language / भाषा चुनें" else "ऐप की भाषा / Choose Language",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = glassColors.textPrimary
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (currentLanguage == AppLanguage.ENGLISH) {
+                        GlassButton(
+                            text = "English",
+                            onClick = { onLanguageChange(AppLanguage.ENGLISH) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        GlassSecondaryButton(
+                            text = "हिंदी",
+                            onClick = { onLanguageChange(AppLanguage.HINDI) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        GlassSecondaryButton(
+                            text = "English",
+                            onClick = { onLanguageChange(AppLanguage.ENGLISH) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        GlassButton(
+                            text = "हिंदी",
+                            onClick = { onLanguageChange(AppLanguage.HINDI) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -820,6 +1090,112 @@ private fun GlassSideNavigationBar(
                         unselectedIconColor = glassColors.textSecondary,
                         unselectedTextColor = glassColors.textSecondary
                     )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Auto-Scrolling Glass Promo Banner Slider with Glass Dot Indicators
+ */
+@Composable
+private fun BannerSlider(
+    banners: List<AppBanner>,
+    modifier: Modifier = Modifier
+) {
+    if (banners.isEmpty()) return
+
+    val context = LocalContext.current
+    val glassColors = LocalGlassColors.current
+    val pagerState = rememberPagerState(initialPage = 1000, pageCount = { Int.MAX_VALUE })
+
+    LaunchedEffect(banners) {
+        while (isActive) {
+            delay(3500.milliseconds)
+            val nextPage = pagerState.currentPage + 1
+            pagerState.animateScrollToPage(
+                page = nextPage,
+                animationSpec = tween(durationMillis = 600, easing = LinearEasing)
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(glassColors.glassSurface)
+            .border(1.2.dp, glassColors.glassBorder, RoundedCornerShape(20.dp))
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            val index = page % banners.size
+            val banner = banners[index]
+
+            SubcomposeAsyncImage(
+                model = banner.imageUrl,
+                contentDescription = "Promo Banner",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(enabled = banner.redirectUrl.isNotBlank()) {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, banner.redirectUrl.toUri())
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // Fallback
+                        }
+                    },
+                loading = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .glassShimmer(RoundedCornerShape(20.dp))
+                    )
+                },
+                error = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .glassShimmer(RoundedCornerShape(20.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Campaign,
+                            contentDescription = "Banner Error",
+                            tint = glassColors.textSecondary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            )
+        }
+
+        // Indicator Glass Dots
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 14.dp, bottom = 10.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val currentIndex = pagerState.currentPage % banners.size
+            repeat(banners.size) { index ->
+                val isSelected = currentIndex == index
+                val dotWidth = if (isSelected) 18.dp else 8.dp
+                val dotColor = if (isSelected) glassColors.accentPrimary else glassColors.textSecondary.copy(alpha = 0.4f)
+
+                Box(
+                    modifier = Modifier
+                        .padding(end = 4.dp)
+                        .height(6.dp)
+                        .width(dotWidth)
+                        .clip(CircleShape)
+                        .background(dotColor)
                 )
             }
         }

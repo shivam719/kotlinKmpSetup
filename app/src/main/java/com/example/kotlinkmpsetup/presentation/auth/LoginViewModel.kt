@@ -139,6 +139,7 @@ class LoginViewModel(
                             it.copy(
                                 isLoading = false,
                                 isOtpRequired = true,
+                                otpSession = message,
                                 generalError = null
                             )
                         }
@@ -167,11 +168,12 @@ class LoginViewModel(
     fun onValidateOtpSubmitted(otp: String) {
         val userInput = _uiState.value.email.orEmpty()
         val userPassword = _uiState.value.password.orEmpty()
+        val session = _uiState.value.otpSession
 
         _uiState.update { it.copy(isLoading = true, generalError = null) }
 
         viewModelScope.launch {
-            authRepository.validateOTP(userInput, userPassword, otp).fold(
+            authRepository.validateOTP(userInput, userPassword, otp, session).fold(
                 onPending = { _uiState.update { it.copy(isLoading = false) } },
                 onLoading = { _uiState.update { it.copy(isLoading = true) } },
                 onSuccess = { user ->

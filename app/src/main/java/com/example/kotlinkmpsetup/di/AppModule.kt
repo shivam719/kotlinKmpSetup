@@ -37,9 +37,11 @@ val dataModule = module {
     single { NetworkConnectivityObserver(androidContext()) }
     single { KtorAuthRemoteDataSource(get(), get()) }
     single { com.example.kotlinkmpsetup.data.remote.KtorHomeRemoteDataSource(get()) }
+    single { com.example.kotlinkmpsetup.data.remote.KtorRechargeRemoteDataSource(get()) }
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<NetworkRepository> { NetworkRepositoryImpl(get()) }
     single<com.example.kotlinkmpsetup.domain.repository.HomeRepository> { com.example.kotlinkmpsetup.data.repository.HomeRepositoryImpl(get()) }
+    single<com.example.kotlinkmpsetup.domain.repository.RechargeRepository> { com.example.kotlinkmpsetup.data.repository.RechargeRepositoryImpl(get()) }
 }
 
 val domainModule = module {
@@ -55,6 +57,7 @@ val viewModelModule = module {
     viewModel { LoginViewModel(get(), get(), get(), get(), get()) }
     viewModel { SignupViewModel(get(), get()) }
     viewModel { com.example.kotlinkmpsetup.presentation.home.HomeViewModel(get()) }
+    viewModel { com.example.kotlinkmpsetup.presentation.recharge.RechargeViewModel(get()) }
 }
 
 val appModules = listOf(

@@ -19,6 +19,7 @@ data class LoginUiState(
     val passwordError: String? = null,
     val isLoading: Boolean = false,
     val isOtpRequired: Boolean = false,
+    val otpSession: String? = null,
     val user: User? = null,
     val isSuccess: Boolean = false,
     val generalError: String? = null,

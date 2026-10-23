@@ -79,7 +79,22 @@ class AutoBodyInterceptor(
                 val savedUser = tokenManager.getSavedUser()
                 if (savedUser != null && savedUser.token.accessToken.isNotBlank()) {
                     if (!jsonObject.has("session")) jsonObject.put("session", savedUser.token.accessToken)
-                    if (!jsonObject.has("sessionID")) jsonObject.put("sessionID", savedUser.id)
+                    if (!jsonObject.has("sessionID")) {
+                        val numericSessionId = savedUser.sessionID.toIntOrNull() ?: savedUser.sessionID.toLongOrNull()
+                        if (numericSessionId != null) {
+                            jsonObject.put("sessionID", numericSessionId)
+                        } else {
+                            jsonObject.put("sessionID", savedUser.sessionID)
+                        }
+                    }
+                    if (!jsonObject.has("userID")) {
+                        val numericUserId = savedUser.id.toIntOrNull()
+                        if (numericUserId != null) {
+                            jsonObject.put("userID", numericUserId)
+                        } else {
+                            jsonObject.put("userID", savedUser.id)
+                        }
+                    }
                 }
 
                 jsonObject.toString()
@@ -99,28 +114,26 @@ class AutoBodyInterceptor(
             tokenManager.notifySessionExpired()
         } else {
             val responseBody = response.body
-            if (responseBody != null) {
-                try {
-                    val source = responseBody.source()
-                    source.request(Long.MAX_VALUE)
-                    val buffer = source.buffer
-                    val responseJson = buffer.clone().readUtf8()
+            try {
+                val source = responseBody.source()
+                source.request(Long.MAX_VALUE)
+                val buffer = source.buffer
+                val responseJson = buffer.clone().readUtf8()
 
-                    val lowerJson = responseJson.lowercase()
-                    if (lowerJson.contains("invalid session") ||
-                        lowerJson.contains("invaild session") ||
-                        lowerJson.contains("session expired") ||
-                        lowerJson.contains("session invalid") ||
-                        lowerJson.contains("session invaild") ||
-                        lowerJson.contains("redirecttologin") ||
-                        lowerJson.contains("session timeout")
-                    ) {
-                        Log.w("AutoBodyInterceptor", "Invalid Session detected in API response: $responseJson")
-                        tokenManager.notifySessionExpired()
-                    }
-                } catch (e: Exception) {
-                    Log.e("AutoBodyInterceptor", "Error reading response body for session check: ${e.localizedMessage}")
+                val lowerJson = responseJson.lowercase()
+                if (lowerJson.contains("invalid session") ||
+                    lowerJson.contains("invaild session") ||
+                    lowerJson.contains("session expired") ||
+                    lowerJson.contains("session invalid") ||
+                    lowerJson.contains("session invaild") ||
+                    lowerJson.contains("redirecttologin") ||
+                    lowerJson.contains("session timeout")
+                ) {
+                    Log.w("AutoBodyInterceptor", "Invalid Session detected in API response: $responseJson")
+                    tokenManager.notifySessionExpired()
                 }
+            } catch (e: Exception) {
+                Log.e("AutoBodyInterceptor", "Error reading response body for session check: ${e.localizedMessage}")
             }
         }
 

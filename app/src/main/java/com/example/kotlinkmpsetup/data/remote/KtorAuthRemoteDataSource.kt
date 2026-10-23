@@ -56,7 +56,7 @@ class KtorAuthRemoteDataSource(
                     NetworkResult.Success(response.toDomain())
                 } else if (response.statusCode == 2 || response.isOTPRequired == true) {
                     NetworkResult.Error(
-                        message = response.message ?: "OTP Verification Required",
+                        message = response.effectiveOtpSession ?: response.message ?: "OTP Verification Required",
                         code = 2
                     )
                 } else {
@@ -70,7 +70,12 @@ class KtorAuthRemoteDataSource(
         }
     }
 
-    suspend fun validateOTP(email: String, password: String, otp: String): AuthResult<User> {
+    suspend fun validateOTP(
+        email: String,
+        password: String,
+        otp: String,
+        otpSession: String? = null
+    ): AuthResult<User> {
         val requestPayload = ArsenLoginRequestDto(
             latitude = deviceInfoProvider.latitude,
             longitude = deviceInfoProvider.longitude,
@@ -83,11 +88,13 @@ class KtorAuthRemoteDataSource(
             serialNo = deviceInfoProvider.getDeviceSerialNo(),
             userID = email,
             version = "16",
-            otp = otp
+            otp = otp,
+            oTPType = 1,
+            oTPSession = otpSession
         )
 
         val result = safeApiCall<ArsenLoginResponseDto> {
-            client.post(ApiEndpoints.Auth.LOGIN) {
+            client.post(ApiEndpoints.Auth.VALIDATE_OTP) {
                 setBody(requestPayload)
             }.body()
         }
@@ -95,7 +102,7 @@ class KtorAuthRemoteDataSource(
         return when (result) {
             is NetworkResult.Success -> {
                 val response = result.data
-                if (response.statusCode == 1) {
+                if (response.statusCode == 1 || response.statusCode == 2) {
                     NetworkResult.Success(response.toDomain())
                 } else {
                     NetworkResult.Error(message = response.message ?: "OTP Verification failed. Please re-enter code.")
@@ -137,18 +144,20 @@ class KtorAuthRemoteDataSource(
             is NetworkResult.Success -> {
                 val response = result.data
                 if (response.statusCode == 1) {
-                    val user = User(
-                        id = response.userId ?: "usr_${response.userName ?: "new"}",
-                        fullName = fullName,
-                        email = emailID,
-                        token = AuthToken(
-                            accessToken = "signup_success_token",
-                            refreshToken = response.password ?: "signup_pass"
+                    NetworkResult.Success(
+                        User(
+                            id = response.userId ?: "0",
+                            sessionID = response.sessionID.orEmpty(),
+                            fullName = response.userName ?: fullName,
+                            email = emailID,
+                            token = AuthToken(
+                                accessToken = response.sessionID.orEmpty(),
+                                refreshToken = response.sessionID.orEmpty()
+                            )
                         )
                     )
-                    NetworkResult.Success(user)
                 } else {
-                    NetworkResult.Error(message = response.message ?: "Signup failed. Please check details.")
+                    NetworkResult.Error(message = response.message ?: "Signup failed. Please check inputs.")
                 }
             }
             is NetworkResult.Error -> result

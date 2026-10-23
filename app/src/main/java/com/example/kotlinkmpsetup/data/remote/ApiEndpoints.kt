@@ -17,15 +17,13 @@ object ApiEndpoints {
     // ====================================================================================
     // BASE ENVIRONMENT URLS
     // ====================================================================================
-    const val BASE_URL_DEV = "https://arsenpay.com"
-    const val BASE_URL_STAGING = "https://staging.arsenpay.com"
-    const val BASE_URL_PROD = "https://arsenpay.com"
+    const val BASE_URL_DEV = "https://rmsrecharge.com"
 
     /** Active Base URL used by Ktor HttpClient */
     const val BASE_URL = BASE_URL_DEV
 
     /** App ID & Domain for ArsenPay API */
-    const val APP_DOMAIN = "arsenpay.com"
+    const val APP_DOMAIN = "rmsrecharge.com"
     const val APP_ID = "ROUNDPAYAPPID13APR20191351"
 
     // ====================================================================================
@@ -40,6 +38,7 @@ object ApiEndpoints {
     // ====================================================================================
     object Auth {
         const val LOGIN = "/App/Login"
+        const val VALIDATE_OTP = "/App/ValidateOTP"
         const val SIGNUP = "/App/AppUserSignup"
         const val REFRESH_TOKEN = "/auth/refresh"
         const val LOGOUT = "/auth/logout"
@@ -65,6 +64,26 @@ object ApiEndpoints {
         const val GET_APP_NEWS = "/App/GetAppNews"
         const val GET_OP_TYPES = "/App/GetOpTypes"
         const val GET_COMPANY_PROFILE = "/App/GetCompanyProfile"
+    }
+
+    // ====================================================================================
+    // RECHARGE & BILL PAYMENT ENDPOINT ROUTES
+    // ====================================================================================
+    object Services {
+        const val IMAGE_URL: String = "https://$APP_DOMAIN/Image/operator/"
+        const val GET_OPERATORS = "/App/GetOperatorsActive"
+        const val GET_OPERATOR_OPTIONALS = "/App/GetOperatorOptionals"
+        const val RECH_SIMPLE_PLAN = "/App/RechSimplePlan"
+        const val DTH_SIMPLE_PLAN = "/App/GetDTHSimplePlan"
+        const val GET_DTH_PLAN_BY_LANG = "/App/GetDTHPlanByLang"
+        const val GET_DTH_CHANNEL_LIST = "/App/GetDTHChannelList"
+        const val GET_RNP_ROFFER = "/App/GetRNPRoffer"
+        const val GET_HLR_LOOKUP = "/App/GetHLRLookUp"
+        const val GET_RNP_DTH_CUST_INFO = "/App/GetRNPDTHCustInfo"
+        const val GET_RNP_DTH_HEAVY_REFRESH = "/App/GetRNPDTHHeavyRefresh"
+        const val FETCH_BILL = "/App/FetchBill"
+        const val TRANSACTION = "/App/Transaction"
+        const val GET_CIRCLES = "/App/GetCircles"
     }
 
     // ====================================================================================
